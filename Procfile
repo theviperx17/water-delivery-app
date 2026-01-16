@@ -1,1 +1,1 @@
-web: gunicorn water_delivery.wsgi
+web: gunicorn water_d.wsgi
