@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}สมัครสมาชิก | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* --- Layout & Wrapper --- */
+  .auth-wrap {
+    min-height: 85vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; background-color: var(--bg-light);
+  }
+
+  /* --- Main Card --- */
+  .auth-card {
+    background: white; width: 100%; max-width: 1000px;
+    border-radius: 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+    overflow: hidden; display: grid; grid-template-columns: 1fr 1.2fr;
+    border: 1px solid #eef2f7;
+  }
+
+  /* --- Left Side (Visual & Products) --- */
+  .auth-media {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    position: relative; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px; text-align: center; color: white; overflow: hidden;
+  }
+  .auth-media::before { content: ""; position: absolute; width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; top: -50px; left: -50px; }
+  .auth-media::after { content: ""; position: absolute; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; bottom: -20px; right: -20px; }
+  
+  .visual-content { position: relative; z-index: 2; }
+
+  /* Product Showcase */
+  .product-showcase {
+    display: flex; justify-content: center; align-items: flex-end;
+    gap: 15px; margin-top: 30px;
+  }
+  .showcase-item {
+    height: 100px; width: auto; object-fit: contain;
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2)); transition: transform 0.3s;
+  }
+  .showcase-item.main-item { height: 140px; z-index: 2; }
+  .showcase-item:hover { transform: translateY(-5px); }
+
+  /* --- Right Side (Form) --- */
+  .auth-form { padding: 50px; display: flex; flex-direction: column; justify-content: center; }
+  
+  .auth-header { margin-bottom: 20px; }
+  .auth-title { font-size: 1.8rem; font-weight: 600; color: var(--text-dark); margin: 0 0 8px; }
+  .auth-subtitle { color: var(--text-gray); font-size: 0.9rem; margin: 0; }
+
+  /* Form Elements */
+  .field { margin-bottom: 16px; }
+  .label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--text-dark); font-size: 0.9rem; }
+  
+  /* Input Style */
+  .field input:not([type="checkbox"]), .field select {
+    width: 100%; padding: 12px 14px;
+    border: 2px solid #eef2f7; border-radius: 12px;
+    font-size: 1rem; font-family: 'Kanit', sans-serif;
+    outline: none; transition: all 0.3s; background: #fdfdfd;
+  }
+  .field input:focus {
+    border-color: var(--primary); background: white;
+    box-shadow: 0 0 0 4px rgba(0, 184, 148, 0.1);
+  }
+  .field input.is-invalid { border-color: #ef4444; background: #fef2f2; }
+
+  .help-text { font-size: 0.8rem; color: var(--text-gray); margin-top: 4px; display: block; }
+  .error-list { color: #ef4444; font-size: 0.85rem; margin-top: 5px; list-style: none; padding: 0; display: flex; align-items: center; gap: 5px; }
+  .error-list li::before { content: "• "; }
+
+  /* Password Toggle */
+  .pwd-wrapper { position: relative; }
+  .pwd-wrapper input { padding-right: 40px; }
+  .toggle-pwd-btn {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text-gray); cursor: pointer; padding: 0;
+  }
+  .toggle-pwd-btn:hover { color: var(--primary); }
+
+  /* Submit Button */
+  .btn-submit {
+    width: 100%; padding: 14px; margin-top: 10px;
+    background: var(--primary); color: white;
+    border: none; border-radius: 50px;
+    font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+  }
+  .btn-submit:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+  /* Footer */
+  .auth-footer { text-align: center; margin-top: 20px; font-size: 0.9rem; color: var(--text-gray); }
+  .link-login { color: var(--secondary); font-weight: 600; text-decoration: none; }
+  .link-login:hover { text-decoration: underline; }
+
+  /* Alert Box */
+  .alert-box { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; }
+  .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+  @media (max-width: 850px) {
+    .auth-card { grid-template-columns: 1fr; max-width: 500px; }
+    .auth-media { padding: 30px; }
+    .showcase-item { height: 80px; } .showcase-item.main-item { height: 110px; }
+    .auth-form { padding: 30px 20px; }
+  }
+</style>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    
+    <div class="auth-media">
+      <div class="visual-content">
+        <h2 style="font-size: 1.6rem; margin: 0 0 10px;">เริ่มต้นสุขภาพดีวันนี้</h2>
+        <p style="opacity: 0.9; margin: 0 0 20px;">สมัครสมาชิกฟรี สั่งน้ำดื่มง่ายๆ <br> พร้อมโปรโมชั่นพิเศษสำหรับสมาชิกใหม่</p>
+        
+        <div class="product-showcase">
+            <img src="{% static 'images/products/bottle-06.png' %}" alt="0.6L" class="showcase-item">
+            <img src="{% static 'images/products/jar-20.png' %}" alt="20L" class="showcase-item main-item">
+            <img src="{% static 'images/products/bottle-15.png' %}" alt="1.5L" class="showcase-item">
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-form">
+      <div class="auth-header">
+        <h1 class="auth-title">สมัครสมาชิก</h1>
+        <p class="auth-subtitle">กรอกข้อมูลเพื่อสร้างบัญชีผู้ใช้งานใหม่</p>
+      </div>
+
+      {% if form.errors or form.non_field_errors %}
+        <div class="alert-box alert-error">
+          <i class="fas fa-exclamation-circle"></i> ตรวจพบข้อผิดพลาด กรุณาตรวจสอบข้อมูลด้านล่าง
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        {% for field in form %}
+          <div class="field">
+            <label class="label" for="{{ field.id_for_label }}">
+                {{ field.label }} {% if field.field.required %}<span style="color:red">*</span>{% endif %}
+            </label>
+            
+            {% if 'password' in field.name %}
+                <div class="pwd-wrapper">
+                    {{ field }}
+                    <button type="button" class="toggle-pwd-btn" tabindex="-1"><i class="fas fa-eye"></i></button>
+                </div>
+            {% else %}
+                {{ field }}
+            {% endif %}
+
+            {% if field.help_text %}
+              <small class="help-text">{{ field.help_text }}</small>
+            {% endif %}
+            
+            {% if field.errors %}
+              <ul class="error-list">
+                {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <button type="submit" class="btn-submit">
+          สมัครสมาชิก <i class="fas fa-user-plus" style="margin-left: 8px;"></i>
+        </button>
+
+        <div class="auth-footer">
+          มีบัญชีอยู่แล้ว? 
+          <a class="link-login" href="{% url 'accounts:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">เข้าสู่ระบบ</a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Script สำหรับปุ่ม Show/Hide Password
+  document.querySelectorAll('.toggle-pwd-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const input = button.previousElementSibling;
+      const icon = button.querySelector('i');
+      if (input) {
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+        icon.className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+      }
+    });
+  });
+</script>
+
+{% endblock %}

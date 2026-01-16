@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ product.name }} | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* --- Breadcrumb (นำทาง) --- */
+  .breadcrumb {
+    margin-bottom: 30px; font-size: 0.9rem; color: var(--text-gray);
+  }
+  .breadcrumb a { color: var(--text-gray); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--primary); }
+  .breadcrumb span { margin: 0 10px; color: #ccc; }
+
+  /* --- Product Container --- */
+  .product-detail-card {
+    background: white; border-radius: var(--radius);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f7; overflow: hidden;
+    display: grid; grid-template-columns: 1fr 1fr;
+  }
+
+  /* --- Left: Image --- */
+  .product-gallery {
+    background: #f9fbfd; padding: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid #eef2f7; position: relative;
+  }
+  .main-image {
+    max-width: 100%; max-height: 400px; object-fit: contain;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1)); transition: transform 0.3s;
+  }
+  .main-image:hover { transform: scale(1.05); }
+  
+  /* Badge */
+  .status-badge {
+    position: absolute; top: 20px; left: 20px;
+    background: #10b981; color: white; padding: 5px 15px;
+    border-radius: 50px; font-size: 0.85rem; font-weight: 600;
+  }
+
+  /* --- Right: Info --- */
+  .product-info-col { padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+  
+  .product-cat { text-transform: uppercase; color: var(--text-gray); font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
+  .product-title { font-size: 2.2rem; font-weight: 700; color: var(--text-dark); margin: 0 0 15px; line-height: 1.2; }
+  .product-desc { color: var(--text-gray); line-height: 1.6; margin-bottom: 30px; font-size: 1rem; }
+  
+  .price-tag { font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
+  .unit { font-size: 1rem; color: var(--text-gray); font-weight: 400; }
+
+  /* --- Action Form --- */
+  .action-area {
+    padding-top: 30px; border-top: 1px solid #eef2f7;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  }
+  
+  .qty-wrapper {
+    display: flex; align-items: center; border: 2px solid #eef2f7; border-radius: 50px; overflow: hidden;
+  }
+  .qty-btn {
+    width: 40px; height: 40px; background: white; border: none;
+    font-size: 1.2rem; color: var(--text-dark); cursor: pointer; transition: 0.2s;
+  }
+  .qty-btn:hover { background: #f1f5f9; color: var(--primary); }
+  .qty-input {
+    width: 50px; text-align: center; border: none; font-size: 1.1rem;
+    font-weight: 600; outline: none; color: var(--text-dark);
+  }
+  
+  .btn-add-cart {
+    flex: 1; background: var(--primary); color: white; border: none;
+    padding: 12px 30px; border-radius: 50px; font-size: 1.1rem; font-weight: 600;
+    cursor: pointer; transition: 0.3s; box-shadow: 0 5px 15px rgba(0, 184, 148, 0.3);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .btn-add-cart:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+  /* Responsive */
+  @media (max-width: 850px) {
+    .product-detail-card { grid-template-columns: 1fr; }
+    .product-gallery { border-right: none; border-bottom: 1px solid #eef2f7; padding: 20px; }
+    .main-image { max-height: 250px; }
+    .product-info-col { padding: 25px; }
+    .product-title { font-size: 1.8rem; }
+  }
+</style>
+
+<div class="container">
+  
+  <div class="breadcrumb">
+    <a href="{% url 'landing' %}">หน้าแรก</a> <span>/</span>
+    <a href="{% url 'catalog:product_list' %}">สินค้าทั้งหมด</a> <span>/</span>
+    {{ product.name }}
+  </div>
+
+  <div class="product-detail-card">
+    
+    <div class="product-gallery">
+      <span class="status-badge">มีสินค้าพร้อมส่ง</span>
+      {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="main-image">
+      {% else %}
+        <div style="color:#ccc; text-align:center;">
+          <i class="fas fa-image" style="font-size: 5rem;"></i>
+          <p>ไม่มีรูปสินค้า</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="product-info-col">
+      <div class="product-cat">WATER DELIVERY</div>
+      <h1 class="product-title">{{ product.name }}</h1>
+      
+      <div class="product-desc">
+        {{ product.description|default:"น้ำดื่มสะอาด ผ่านกระบวนการกรองมาตรฐานสากล เพื่อสุขภาพที่ดีของคุณและครอบครัว" }}
+        <br><br>
+        <strong>ขนาดบรรจุ:</strong> {{ product.size_litre }} ลิตร
+      </div>
+
+      <div class="price-tag">
+        ฿{{ product.price }} <span class="unit">/ แพ็ค(หรือถัง)</span>
+      </div>
+
+      <form method="post" action="{% url 'orders:add_to_cart' product.id %}">
+        {% csrf_token %}
+        <div class="action-area">
+          
+          <div class="qty-wrapper">
+            <button type="button" class="qty-btn" onclick="decreaseQty()">-</button>
+            <input type="number" name="qty" id="qty" value="1" min="1" class="qty-input" readonly>
+            <button type="button" class="qty-btn" onclick="increaseQty()">+</button>
+          </div>
+
+          <button type="submit" class="btn-add-cart">
+            <i class="fas fa-shopping-cart"></i> เพิ่มลงตะกร้า
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function increaseQty() {
+    var qtyInput = document.getElementById('qty');
+    qtyInput.value = parseInt(qtyInput.value) + 1;
+  }
+  function decreaseQty() {
+    var qtyInput = document.getElementById('qty');
+    if (parseInt(qtyInput.value) > 1) {
+      qtyInput.value = parseInt(qtyInput.value) - 1;
+    }
+  }
+</script>
+{% endblock %}

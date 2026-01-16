@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}จัดการออเดอร์ (Admin) | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .page-title { font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+
+  /* Table Styling */
+  .table-card { background: white; border-radius: var(--radius); box-shadow: 0 5px 15px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #eef2f7; }
+  .table-responsive { overflow-x: auto; }
+  .admin-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+  
+  .admin-table th {
+    background: #f9fbfd; padding: 15px; text-align: left; font-weight: 600;
+    color: var(--text-gray); font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #eef2f7;
+  }
+  .admin-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: var(--text-dark); font-size: 0.95rem; }
+  .admin-table tr:hover { background-color: #fafbfc; }
+
+  /* Elements */
+  .badge-status { padding: 4px 10px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; }
+  .bg-new { background: #fff3cd; color: #856404; }
+  .bg-process { background: #cff4fc; color: #055160; }
+  .bg-done { background: #d1fae5; color: #0f5132; }
+  .bg-cancel { background: #f8d7da; color: #721c24; }
+
+  .coord-link { color: var(--primary); text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+  .coord-link:hover { text-decoration: underline; }
+
+  /* Form Elements inside Table */
+  .form-inline { display: flex; align-items: center; gap: 8px; }
+  .select-sm { padding: 6px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.85rem; max-width: 140px; }
+  .btn-save {
+    background: var(--primary); color: white; border: none; padding: 6px 12px;
+    border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: 0.3s;
+  }
+  .btn-save:hover { background: var(--primary-hover); }
+</style>
+
+<div class="page-header">
+  <h1 class="page-title"><i class="fas fa-tasks"></i> จัดการออเดอร์</h1>
+  <span style="color: #888;">{% now "j F Y" %}</span>
+</div>
+
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>#ID</th>
+          <th>ลูกค้า</th>
+          <th>ยอดรวม</th>
+          <th>พิกัด</th>
+          <th>สถานะปัจจุบัน</th>
+          <th>มอบหมายงาน / เปลี่ยนสถานะ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><strong>#{{ o.id }}</strong></td>
+          <td>
+            <div>{{ o.customer.user.first_name|default:o.customer.user.username }}</div>
+            <small style="color:#888;">{{ o.created_at|date:"H:i" }}</small>
+          </td>
+          <td style="font-weight:600;">฿{{ o.total_price }}</td>
+          
+          <td>
+            {% if o.address_lat and o.address_lng %}
+              <a href="https://www.google.com/maps/search/?api=1&query={{ o.address_lat }},{{ o.address_lng }}" target="_blank" class="coord-link">
+                <i class="fas fa-map-marker-alt"></i> {{ o.address_lat|floatformat:4 }}, {{ o.address_lng|floatformat:4 }}
+              </a>
+            {% else %}
+              <span style="color:#ccc;">-</span>
+            {% endif %}
+          </td>
+
+          <td>
+            {% if o.status == 'new' %}<span class="badge-status bg-new">ใหม่</span>
+            {% elif o.status == 'delivered' %}<span class="badge-status bg-done">สำเร็จ</span>
+            {% elif o.status == 'cancelled' %}<span class="badge-status bg-cancel">ยกเลิก</span>
+            {% else %}<span class="badge-status bg-process">{{ o.get_status_display }}</span>
+            {% endif %}
+          </td>
+
+          <td>
+            <form method="post" class="form-inline">
+              {% csrf_token %}
+              <input type="hidden" name="order_id" value="{{ o.id }}"/>
+              
+              <select name="driver_id" class="select-sm">
+                <option value="">-- ไม่ระบุ --</option>
+                {% for d in drivers %}
+                  <option value="{{ d.id }}" {% if o.driver_id == d.id %}selected{% endif %}>
+                    {{ d.user.first_name|default:d.user.username }}
+                  </option>
+                {% endfor %}
+              </select>
+
+              <select name="status" class="select-sm">
+                <option value="new" {% if o.status == 'new' %}selected{% endif %}>รอชำระ/ใหม่</option>
+                <option value="processing" {% if o.status == 'processing' %}selected{% endif %}>เตรียมของ</option>
+                <option value="out_for_delivery" {% if o.status == 'out_for_delivery' %}selected{% endif %}>กำลังส่ง</option>
+                <option value="delivered" {% if o.status == 'delivered' %}selected{% endif %}>ส่งสำเร็จ</option>
+                <option value="cancelled" {% if o.status == 'cancelled' %}selected{% endif %}>ยกเลิก</option>
+              </select>
+
+              <button type="submit" class="btn-save"><i class="fas fa-save"></i></button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center; padding:40px; color:#999;">ไม่มีออเดอร์ในระบบ</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

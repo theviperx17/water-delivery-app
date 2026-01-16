@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}จัดการโปรไฟล์ | Water Delivery{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <style>
+    /* --- Page Header --- */
+    .page-header { margin-bottom: 30px; }
+    .page-title { font-size: 1.8rem; font-weight: 600; color: var(--text-dark); margin: 0; }
+    .page-subtitle { color: var(--text-gray); font-size: 1rem; }
+
+    /* --- Layout Grid --- */
+    .profile-container {
+      display: grid;
+      grid-template-columns: 300px 1fr; /* ซ้าย 300px, ขวาที่เหลือ */
+      gap: 30px;
+      align-items: start;
+    }
+
+    /* --- Common Card Style --- */
+    .card-box {
+      background: white;
+      border-radius: var(--radius);
+      padding: 30px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+      border: 1px solid #eef2f7;
+    }
+
+    /* --- Left Column: Avatar --- */
+    .avatar-section { text-align: center; display: flex; flex-direction: column; align-items: center; }
+    
+    .avatar-wrapper {
+      position: relative;
+      width: 160px; height: 160px;
+      margin-bottom: 20px;
+    }
+    .avatar-img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 5px solid white;
+      box-shadow: 0 8px 25px rgba(0, 184, 148, 0.2);
+    }
+    
+    /* ปุ่มเปลี่ยนรูปสวยๆ */
+    .btn-upload {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #f1f5f9; color: var(--text-dark);
+      padding: 8px 16px; border-radius: 50px;
+      font-size: 0.9rem; font-weight: 500;
+      cursor: pointer; border: 1px solid #e2e8f0;
+      transition: 0.3s;
+    }
+    .btn-upload:hover { background: #e2e8f0; border-color: #cbd5e1; }
+    .btn-upload i { color: var(--primary); }
+    
+    /* ซ่อน Input File เดิม */
+    input[type="file"] { display: none; }
+
+    .user-info-text { margin-top: 20px; color: var(--text-gray); font-size: 0.95rem; }
+    .user-badge { 
+      background: #d1fae5; color: #065f46; padding: 2px 10px; 
+      border-radius: 20px; font-size: 0.8rem; font-weight: bold;
+    }
+
+    /* --- Right Column: Form --- */
+    .form-section-title {
+      font-size: 1.1rem; font-weight: 600; color: var(--text-dark);
+      margin-bottom: 20px; padding-bottom: 10px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .form-section-title i { color: var(--primary); font-size: 1.2rem; }
+
+    .form-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;
+    }
+    .form-group { margin-bottom: 15px; }
+    .label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem; color: var(--text-dark); }
+    
+    /* Input Styling */
+    .input {
+      width: 100%; padding: 12px 14px;
+      border: 2px solid #eef2f7; border-radius: 12px;
+      font-size: 1rem; font-family: 'Kanit', sans-serif;
+      outline: none; transition: 0.3s; background: #fdfdfd; color: var(--text-dark);
+    }
+    .input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(0, 184, 148, 0.1); }
+    textarea.input { resize: vertical; min-height: 100px; font-family: 'Kanit', sans-serif; }
+
+    /* --- Map Styling --- */
+    #map {
+      height: 350px; width: 100%;
+      border-radius: 16px;
+      border: 2px solid #eef2f7;
+      margin-top: 10px; z-index: 1;
+    }
+    .map-hint { font-size: 0.9rem; color: var(--text-gray); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
+    /* --- Buttons --- */
+    .btn-save {
+      background: var(--primary); color: white; border: none;
+      padding: 14px 40px; border-radius: 50px; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-save:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+    /* Responsive */
+    @media (max-width: 850px) {
+      .profile-container { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">จัดการโปรไฟล์</h1>
+  <p class="page-subtitle">อัปเดตข้อมูลส่วนตัวและปักหมุดที่อยู่สำหรับการจัดส่ง</p>
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert--{{ message.tags }}" style="margin-bottom: 25px;">
+        <i class="fas fa-check-circle"></i> {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="profile-container">
+    
+    <div class="card-box avatar-section">
+      <div class="avatar-wrapper">
+        {% if profile.image %}
+          <img src="{{ profile.image.url }}" alt="Profile" class="avatar-img" id="preview-img">
+        {% else %}
+          <div class="avatar-img" style="background:#e0f2f1; display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:3.5rem;">
+            <i class="fas fa-user"></i>
+          </div>
+        {% endif %}
+      </div>
+      
+      <label for="id_image" class="btn-upload">
+        <i class="fas fa-camera"></i> เปลี่ยนรูปโปรไฟล์
+      </label>
+      {% render_field form.image id="id_image" onchange="previewImage(this);" %}
+      
+      <div class="user-info-text">
+        <strong>{{ user.username }}</strong><br>
+        <span class="user-badge">สมาชิกทั่วไป</span>
+      </div>
+    </div>
+
+    <div class="card-box">
+      
+      <div class="form-section-title">
+        <i class="fas fa-address-card"></i> ข้อมูลการติดต่อ
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="label">เบอร์โทรศัพท์</label>
+          {% render_field form.phone class="input" placeholder="08x-xxx-xxxx" %}
+        </div>
+        <div class="form-group">
+          <label class="label">วันเกิด</label>
+          {% render_field form.birth_date class="input" type="date" %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="label">ที่อยู่ (รายละเอียด)</label>
+        {% render_field form.default_address class="input" rows="3" placeholder="บ้านเลขที่, หมู่บ้าน, ซอย, ถนน, จุดสังเกต..." %}
+      </div>
+
+      <div class="form-section-title" style="margin-top: 30px;">
+        <i class="fas fa-map-marked-alt"></i> ปักหมุดตำแหน่งจัดส่ง
+      </div>
+      
+      <div class="map-hint">
+        <i class="fas fa-info-circle" style="color: var(--primary);"></i> 
+        <span>ลากหมุดสีฟ้า <i class="fas fa-map-marker-alt text-primary"></i> ไปวางตรงตำแหน่งบ้านของคุณ เพื่อให้คนส่งน้ำไปถูกที่</span>
+      </div>
+      
+      <div id="map"></div>
+
+      <div style="display: none;">
+        {% render_field form.address_lat id="id_address_lat" %}
+        {% render_field form.address_lng id="id_address_lng" %}
+        
+        {% if request.user.is_staff %}
+          {% render_field form.role %}
+        {% endif %}
+      </div>
+
+      <div style="margin-top: 40px; text-align: right;">
+        <button type="submit" class="btn-save">
+          <i class="fas fa-save"></i> บันทึกการเปลี่ยนแปลง
+        </button>
+      </div>
+
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+  // --- 1. ฟังก์ชันแสดงตัวอย่างรูปภาพ (Preview Image) ---
+  function previewImage(input) {
+    if (input.files && input.files[0]) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = document.getElementById('preview-img');
+        if(img) {
+            img.src = e.target.result;
+        } else {
+            // ถ้าเดิมไม่มีรูป (เป็น placeholder) ให้ reload เพื่อความง่าย
+            location.reload(); 
+        }
+      }
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // --- 2. สคริปต์แผนที่ (Map Logic) ---
+  document.addEventListener('DOMContentLoaded', function() {
+    // ดึงค่าจาก Input ที่ซ่อนอยู่
+    const latInput = document.getElementById('id_address_lat');
+    const lngInput = document.getElementById('id_address_lng');
+    
+    // ตั้งค่าเริ่มต้น (ถ้าไม่มีค่าให้ใช้ อนุสาวรีย์ชัยฯ กทม.)
+    let startLat = parseFloat(latInput.value) || 13.7563;
+    let startLng = parseFloat(lngInput.value) || 100.5018;
+
+    // ป้องกันกรณีค่าเป็น 0 หรือ None
+    if (!startLat) startLat = 13.7563;
+    if (!startLng) startLng = 100.5018;
+
+    // สร้างแผนที่
+    const map = L.map('map').setView([startLat, startLng], 15);
+
+    // ใส่ภาพแผนที่จาก OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // สร้างหมุด (Draggable = ลากได้)
+    const marker = L.marker([startLat, startLng], {
+        draggable: true
+    }).addTo(map);
+
+    // ฟังก์ชันอัปเดตค่าลงใน Input เมื่อลากหมุดเสร็จ
+    function onDragEnd() {
+        const latlng = marker.getLatLng();
+        latInput.value = latlng.lat.toFixed(6);
+        lngInput.value = latlng.lng.toFixed(6);
+    }
+
+    // เมื่อลากหมุดเสร็จ ให้เรียกฟังก์ชัน
+    marker.on('dragend', onDragEnd);
+    
+    // (เสริม) คลิกที่แผนที่เพื่อย้ายหมุดได้ด้วย
+    map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        onDragEnd();
+    });
+    
+    // แก้บั๊กแผนที่โหลดไม่เต็มจอเมื่อเปิดหน้า
+    setTimeout(function(){ map.invalidateSize(); }, 200);
+  });
+</script>
+{% endblock %}

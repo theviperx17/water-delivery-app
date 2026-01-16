@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}บริการส่งน้ำดื่มถึงบ้าน | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* กำหนดตัวแปรสีให้ตรงกับ Base.html */
+  :root {
+    --primary: #00b894;
+    --primary-dark: #00a383;
+    --secondary: #0984e3;
+    --text-dark: #2d3436;
+    --text-muted: #636e72;
+    --bg-light: #f9fbfd;
+    --card-bg: #ffffff;
+    --border-color: #eef2f7;
+    --radius: 20px;
+    --shadow-sm: 0 5px 15px rgba(0,0,0,0.05);
+    --shadow-hover: 0 15px 30px rgba(0,0,0,0.1);
+  }
+
+  /* --- HERO SECTION --- */
+  .hero-section {
+    position: relative;
+    border-radius: var(--radius);
+    overflow: hidden;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+    /* ใส่ภาพพื้นหลัง (ถ้าไม่มีภาพจะแสดงสีแทน) */
+    background: linear-gradient(135deg, rgba(0, 184, 148, 0.1), rgba(9, 132, 227, 0.1));
+    /* background-image: url("{% static 'images/hero-bg.jpg' %}"); background-size: cover; */
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 40px;
+    max-width: 600px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius);
+    margin: 40px;
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .eyebrow {
+    color: var(--primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    display: inline-block;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.2;
+    color: var(--text-dark);
+    margin-bottom: 15px;
+    font-weight: 600;
+  }
+
+  .hero-lead {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 25px;
+    line-height: 1.6;
+  }
+
+  .badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+  }
+  .badge-item {
+    background: #e0f2f1;
+    color: var(--primary-dark);
+    padding: 5px 12px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .cta-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  /* --- SECTIONS COMMON --- */
+  .section {
+    padding: 60px 0;
+  }
+  .section-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .section-title {
+    font-size: 2rem;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .section-subtitle {
+    color: var(--text-muted);
+  }
+
+  /* --- CARDS GRID --- */
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+  }
+
+  .card-modern {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 30px;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  .card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--primary);
+  }
+
+  /* Feature Icons */
+  .icon-box {
+    width: 60px;
+    height: 60px;
+    background: #e0f2f1;
+    color: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+
+  /* Steps */
+  .step-card {
+    text-align: center;
+    padding: 30px;
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+  }
+  .step-number {
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto 15px;
+    font-size: 1.2rem;
+  }
+
+  /* Product Cards */
+  .product-card {
+    text-align: center;
+    background: white;
+    padding: 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    transition: 0.3s;
+  }
+  .product-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+  .product-img {
+    height: 180px;
+    width: 100%;
+    object-fit: contain;
+    margin-bottom: 15px;
+  }
+  .product-price {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  /* Testimonials */
+  .testimonial-card {
+    background: white;
+    padding: 25px;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+  .quote-icon {
+    color: #dfe6e9;
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+
+  /* Trust/Payments */
+  .trust-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-top: 40px;
+    padding: 30px;
+    background: #fff;
+    border-radius: var(--radius);
+    border: 1px dashed #cbd5e1;
+  }
+  .pay-logo {
+    height: 30px;
+    opacity: 0.7;
+    transition: 0.3s;
+  }
+  .pay-logo:hover { opacity: 1; }
+
+  /* CTA Bottom */
+  .cta-bottom {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    padding: 50px;
+    border-radius: var(--radius);
+    text-align: center;
+    margin-top: 60px;
+  }
+  .cta-bottom h2 { color: white; margin-bottom: 10px; }
+  .cta-bottom p { color: rgba(255,255,255,0.9); margin-bottom: 25px; }
+  .btn-white {
+    background: white;
+    color: var(--primary);
+    padding: 12px 30px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    transition: 0.3s;
+  }
+  .btn-white:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+</style>
+
+<section class="hero-section" style="margin-top: 20px;">
+  <div class="hero-content">
+    <span class="eyebrow">Water Delivery Service</span>
+    <h1 class="hero-title">
+      น้ำดื่มสะอาด <span style="color:var(--primary)">ส่งไว</span><br>
+      ถึงหน้าบ้านคุณ
+    </h1>
+    <p class="hero-lead">
+      สั่งง่ายผ่านเว็บไซต์ เลือกรอบจัดส่งได้ตามสะดวก <br>
+      พร้อมระบบติดตามสถานะคนส่งน้ำแบบ Real-time
+    </p>
+
+    <div class="badges">
+      <div class="badge-item"><i class="fas fa-check-circle"></i> น้ำคุณภาพ</div>
+      <div class="badge-item"><i class="fas fa-clock"></i> ตรงเวลา</div>
+      <div class="badge-item"><i class="fas fa-truck"></i> ทีมงานมืออาชีพ</div>
+    </div>
+
+    <div class="cta-group">
+      {% if user.is_authenticated %}
+        <a href="{% url 'catalog:product_list' %}" class="btn btn-primary"><i class="fas fa-shopping-cart"></i> สั่งน้ำดื่มเลย</a>
+      {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary">เข้าสู่ระบบ</a>
+        <a href="{% url 'accounts:signup' %}" class="btn btn-outline">สมัครสมาชิก</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">ทำไมต้องเลือกเรา?</h2>
+    <p class="section-subtitle">มาตรฐานการบริการที่เหนือกว่า เพื่อสุขภาพที่ดีของคุณ</p>
+  </div>
+  
+  <div class="grid-container">
+    <div class="card-modern">
+      <div class="icon-box"><i class="fas fa-bottle-water"></i></div>
+      <h3>ขนาดครบทุกความต้องการ</h3>
+      <p style="color:var(--text-muted)">มีให้เลือกตั้งแต่ขวดพกพา 0.6 ลิตร ไปจนถึงถังใหญ่ 20 ลิตร สำหรับครอบครัวและออฟฟิศ</p>
+    </div>
+    <div class="card-modern">
+      <div class="icon-box"><i class="fas fa-calendar-check"></i></div>
+      <h3>รอบจัดส่งยืดหยุ่น</h3>
+      <p style="color:var(--text-muted)">เลือกช่วงเวลาที่คุณสะดวกรับของได้เอง (เช้า / บ่าย / เย็น) ไม่ต้องรอนาน</p>
+    </div>
+    <div class="card-modern">
+      <div class="icon-box"><i class="fas fa-map-marked-alt"></i></div>
+      <h3>ติดตามได้ Real-time</h3>
+      <p style="color:var(--text-muted)">รู้สถานะการจัดส่งตลอดเวลา แจ้งเตือนเมื่อคนส่งน้ำใกล้ถึงจุดหมาย</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background: #f1f5f9; border-radius: var(--radius); padding: 50px;">
+  <div class="section-header">
+    <h2 class="section-title">เริ่มต้นง่ายๆ ใน 3 ขั้นตอน</h2>
+  </div>
+  <div class="grid-container">
+    <div class="step-card">
+      <div class="step-number">1</div>
+      <h4>สมัคร / เข้าสู่ระบบ</h4>
+      <p class="section-subtitle">สร้างบัญชีผู้ใช้เพื่อเริ่มสั่งซื้อ</p>
+    </div>
+    <div class="step-card">
+      <div class="step-number">2</div>
+      <h4>เลือกสินค้า & รอบส่ง</h4>
+      <p class="section-subtitle">เลือกน้ำดื่มที่ต้องการและเวลารับ</p>
+    </div>
+    <div class="step-card">
+      <div class="step-number">3</div>
+      <h4>ชำระเงิน & รอรับของ</h4>
+      <p class="section-subtitle">รองรับ QR Code และบัตรเครดิต</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h2 class="section-title" style="margin-bottom: 0;">สินค้ายอดนิยม</h2>
+    <a href="{% url 'catalog:product_list' %}" style="color: var(--primary); text-decoration: none; font-weight: 600;">
+      ดูทั้งหมด <i class="fas fa-arrow-right"></i>
+    </a>
+  </div>
+
+  <div class="grid-container">
+    <div class="product-card">
+      <img src="{% static 'images/products/bottle-06.png' %}" alt="0.6L" class="product-img">
+      <h4>น้ำดื่ม 0.6 L (แพ็ค 12)</h4>
+      <div class="product-price">฿50</div>
+    </div>
+    <div class="product-card">
+      <img src="{% static 'images/products/bottle-15.png' %}" alt="1.5L" class="product-img">
+      <h4>น้ำดื่ม 1.5 L (แพ็ค 6)</h4>
+      <div class="product-price">฿55</div>
+    </div>
+    <div class="product-card">
+      <img src="{% static 'images/products/jar-20.png' %}" alt="20L" class="product-img">
+      <h4>น้ำดื่มถัง 20 L</h4>
+      <div class="product-price">฿45</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title section-header">เสียงจากลูกค้า</h2>
+  <div class="grid-container">
+    <div class="testimonial-card">
+      <i class="fas fa-quote-left quote-icon"></i>
+      <p>"สั่งง่ายมาก ส่งตามเวลาที่เลือกเป๊ะๆ ประทับใจค่ะ พนักงานพูดจาดีมาก"</p>
+      <div style="margin-top: 15px; font-weight: 600;">— คุณกานดา, หมู่บ้านธารา</div>
+    </div>
+    <div class="testimonial-card">
+      <i class="fas fa-quote-left quote-icon"></i>
+      <p>"น้ำสะอาด ราคามาตรฐาน ชอบตรงที่ดูในมือถือได้ว่ารถส่งน้ำถึงไหนแล้ว"</p>
+      <div style="margin-top: 15px; font-weight: 600;">— คุณศักดิ์, คอนโด The Light</div>
+    </div>
+    <div class="testimonial-card">
+      <i class="fas fa-quote-left quote-icon"></i>
+      <p>"สะดวกมากครับ ไม่ต้องแบกน้ำเองอีกต่อไป แนะนำเลยครับ"</p>
+      <div style="margin-top: 15px; font-weight: 600;">— คุณนนท์, ร้านกาแฟ A1</div>
+    </div>
+  </div>
+</section>
+
+<div class="trust-section">
+  <span style="color: var(--text-muted); font-weight: 500;">ช่องทางการชำระเงิน:</span>
+  <img src="{% static 'payments/app_icon.png' %}" alt="PromptPay" class="pay-logo">
+  <img src="{% static 'payments/true.png' %}" alt="TrueMoney" class="pay-logo">
+  <span style="margin-left: auto; color: var(--primary); font-size: 0.9rem;">
+    <i class="fas fa-certificate"></i> ได้รับมาตรฐาน GMP/HACCP
+  </span>
+</div>
+
+<div class="cta-bottom">
+  <h2>พร้อมดื่มน้ำสะอาดเพื่อสุขภาพหรือยัง?</h2>
+  <p>สมัครสมาชิกวันนี้ สั่งซื้อง่าย ส่งไว ถึงหน้าบ้าน</p>
+  <a href="{% url 'accounts:signup' %}" class="btn-white">สมัครสมาชิกฟรี</a>
+</div>
+
+{% endblock %}

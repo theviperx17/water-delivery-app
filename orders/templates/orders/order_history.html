@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ประวัติการสั่งซื้อ | Water Delivery{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <style>
+    /* --- Header --- */
+    .page-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9;
+    }
+    .page-title { font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+
+    /* --- Order Card --- */
+    .order-card {
+      background: white; border-radius: var(--radius);
+      border: 1px solid #eef2f7; margin-bottom: 30px; overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.03); transition: 0.3s;
+    }
+    .order-card:hover { box-shadow: 0 10px 25px rgba(0,0,0,0.08); border-color: #e0f2f1; }
+
+    /* Card Header */
+    .card-header {
+      background: #f9fbfd; padding: 15px 25px;
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid #eef2f7; flex-wrap: wrap; gap: 10px;
+    }
+    .order-id { font-weight: 700; color: var(--text-dark); font-size: 1.1rem; }
+    .order-date { font-size: 0.9rem; color: var(--text-gray); display: flex; align-items: center; gap: 5px; }
+
+    /* Status Badges */
+    .status-badge { padding: 5px 12px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+    .st-new { background: #fff3cd; color: #856404; }
+    .st-out { background: #cff4fc; color: #055160; }
+    .st-done { background: #d1fae5; color: #0f5132; }
+    .st-cancel { background: #f8d7da; color: #721c24; }
+
+    /* Card Body Grid */
+    .card-body {
+      padding: 25px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;
+    }
+
+    /* Items List */
+    .item-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-name { color: var(--text-dark); font-weight: 500; }
+    .item-meta { color: var(--text-gray); font-size: 0.85rem; }
+
+    /* Info Section (Right) */
+    .info-box {
+      background: #fff; border: 1px solid #eef2f7; border-radius: 12px; padding: 15px;
+    }
+    .info-row { margin-bottom: 10px; font-size: 0.9rem; color: var(--text-dark); display: flex; gap: 10px; }
+    .info-row i { color: var(--primary); width: 20px; text-align: center; margin-top: 3px; }
+    
+    /* Map Container inside Card */
+    .mini-map {
+      height: 200px; width: 100%; border-radius: 12px;
+      margin-top: 15px; border: 1px solid #ddd; z-index: 0;
+    }
+
+    /* Card Footer */
+    .card-footer {
+      padding: 15px 25px; background: #fff; border-top: 1px solid #eef2f7;
+      display: flex; justify-content: flex-end; align-items: center; gap: 15px;
+    }
+    .total-price { font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+
+    /* Empty State */
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-gray); }
+    .empty-icon { font-size: 4rem; color: #e2e8f0; margin-bottom: 20px; }
+
+    @media (max-width: 768px) {
+      .card-body { grid-template-columns: 1fr; }
+      .card-header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">คำสั่งซื้อของฉัน</h1>
+    <a href="{% url 'catalog:product_list' %}" class="btn btn-outline" style="border-radius: 50px; padding: 8px 20px;">
+      <i class="fas fa-plus"></i> สั่งซื้อเพิ่ม
+    </a>
+  </div>
+
+  {% if orders %}
+    {% for o in orders %}
+      <div class="order-card">
+        
+        <div class="card-header">
+          <div>
+            <div class="order-id">#{{ o.id }}</div>
+            <div class="order-date"><i class="far fa-clock"></i> {{ o.created_at|date:'d/m/Y H:i' }}</div>
+          </div>
+          
+          {% if o.status == 'new' %}
+            <span class="status-badge st-new"><i class="fas fa-hourglass-start"></i> รอจัดส่ง/รอคิว</span>
+          {% elif o.status == 'out_for_delivery' %}
+            <span class="status-badge st-out"><i class="fas fa-truck"></i> กำลังเดินทาง</span>
+          {% elif o.status == 'delivered' %}
+            <span class="status-badge st-done"><i class="fas fa-check-circle"></i> ส่งสำเร็จ</span>
+          {% else %}
+            <span class="status-badge st-cancel">{{ o.get_status_display }}</span>
+          {% endif %}
+        </div>
+
+        <div class="card-body">
+          
+          <div>
+            <h4 style="margin: 0 0 15px; color: var(--text-gray); font-size: 0.9rem;">รายการสินค้า</h4>
+            {% for item in o.items.all %}
+              <div class="item-row">
+                <div>
+                  <div class="item-name">{{ item.product.name }}</div>
+                  <div class="item-meta">ขนาด {{ item.product.size_litre }} L</div>
+                </div>
+                <div style="text-align: right;">
+                  <div>x{{ item.qty }}</div>
+                  <div style="color:var(--primary);">฿{{ item.line_total }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="info-box">
+            <h4 style="margin: 0 0 15px; color: var(--text-gray); font-size: 0.9rem;">รายละเอียดการจัดส่ง</h4>
+            
+            <div class="info-row">
+              <i class="fas fa-map-marker-alt"></i>
+              <div>{{ o.address|default:"-" }}</div>
+            </div>
+            
+            <div class="info-row">
+              <i class="fas fa-clock"></i>
+              <div>
+                {% if o.round %}
+                  {{ o.round.date|date:"d M" }} ({{ o.round.get_time_slot_display }})
+                {% else %}
+                  {{ o.delivery_slot|default:"ไม่ระบุเวลา" }}
+                {% endif %}
+              </div>
+            </div>
+
+            {% if o.address_lat and o.address_lng %}
+              <div id="map-{{ o.id }}" class="mini-map"></div>
+              <div class="map-data" 
+                   data-id="{{ o.id }}" 
+                   data-lat="{{ o.address_lat }}" 
+                   data-lng="{{ o.address_lng }}">
+              </div>
+            {% endif %}
+          </div>
+
+        </div>
+
+        <div class="card-footer">
+          <span style="color: var(--text-gray);">ยอดสุทธิ:</span>
+          <span class="total-price">฿{{ o.total_price }}</span>
+        </div>
+
+      </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon"><i class="fas fa-clipboard-list"></i></div>
+      <h3>ยังไม่มีคำสั่งซื้อ</h3>
+      <p style="color: var(--text-gray);">เริ่มสั่งซื้อน้ำดื่มสะอาดเพื่อสุขภาพที่ดีของคุณได้เลยครับ</p>
+      <a href="{% url 'catalog:product_list' %}" class="btn btn-primary" style="margin-top: 20px; padding: 12px 30px; border-radius: 50px;">
+        <i class="fas fa-shopping-cart"></i> เลือกซื้อสินค้า
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // ค้นหาทุก element ที่มี class 'map-data'
+    const maps = document.querySelectorAll('.map-data');
+
+    maps.forEach(function(el) {
+      const id = el.dataset.id;
+      const lat = parseFloat(el.dataset.lat);
+      const lng = parseFloat(el.dataset.lng);
+
+      // ตรวจสอบว่ามีค่า lat/lng จริงๆ
+      if (lat && lng) {
+        // สร้างแผนที่ใน div id="map-XX"
+        const map = L.map('map-' + id, {
+            zoomControl: false, // ปิดปุ่ม Zoom เพื่อความสะอาดตา (Mini map)
+            scrollWheelZoom: false, // ปิดการเลื่อนด้วยเมาส์
+            dragging: false // ปิดการลาก (ให้เป็นภาพนิ่งๆ)
+        }).setView([lat, lng], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        L.marker([lat, lng]).addTo(map)
+          .bindPopup('<b>ปลายทางจัดส่ง</b><br>ออเดอร์ #' + id);
+      }
+    });
+  });
+</script>
+{% endblock %}

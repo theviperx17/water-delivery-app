@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}จัดการรอบจัดส่ง (Admin) | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* ใช้ Style ร่วมกับ manage_orders ด้านบน */
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .page-title { font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+  
+  .table-card { background: white; border-radius: var(--radius); box-shadow: 0 5px 15px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid #eef2f7; }
+  .table-responsive { overflow-x: auto; }
+  .admin-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  .admin-table th { background: #f9fbfd; padding: 15px; text-align: left; font-weight: 600; color: var(--text-gray); border-bottom: 2px solid #eef2f7; }
+  .admin-table td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+
+  /* Progress Bar for Capacity */
+  .capacity-wrapper { width: 100px; height: 8px; background: #eee; border-radius: 10px; margin-top: 5px; overflow: hidden; }
+  .capacity-bar { height: 100%; background: var(--primary); border-radius: 10px; }
+  .capacity-text { font-size: 0.8rem; color: #666; }
+
+  /* Forms & Buttons */
+  .action-group { display: flex; gap: 8px; align-items: center; }
+  .select-sm { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem; }
+  .btn-icon { border: none; background: none; cursor: pointer; font-size: 1rem; color: var(--text-gray); transition: 0.2s; }
+  .btn-icon:hover { color: var(--primary); }
+  .btn-pull { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; }
+  .btn-pull:hover { background: #ffeeba; }
+</style>
+
+<div class="page-header">
+  <h1 class="page-title"><i class="fas fa-clock"></i> จัดการรอบจัดส่ง</h1>
+</div>
+
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>วันที่ / เวลา</th>
+          <th>ความจุ (Used/Cap)</th>
+          <th>สถานะรอบ</th>
+          <th>คนขับประจำรอบ</th>
+          <th>การจัดการ (คิว)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rounds %}
+        <tr>
+          <td>
+            <strong>{{ r.date|date:'d/m/Y' }}</strong><br>
+            <span style="color:var(--text-gray); font-size:0.9rem;">{{ r.get_time_slot_display }}</span>
+          </td>
+
+          <td>
+            <div class="capacity-text">
+              ใช้ไป {{ r.used }} / {{ r.capacity }}
+            </div>
+            <div class="capacity-wrapper">
+              <div class="capacity-bar" style="width: {% widthratio r.used r.capacity 100 %}%;"></div>
+            </div>
+          </td>
+
+          <td>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="status">
+              <input type="hidden" name="round_id" value="{{ r.id }}">
+              
+              <select name="status" class="select-sm" onchange="this.form.submit()">
+                <option value="open" {% if r.status == 'open' %}selected{% endif %}>🟢 เปิดรับ</option>
+                <option value="locked" {% if r.status == 'locked' %}selected{% endif %}>🔒 ล็อคแล้ว</option>
+                <option value="closed" {% if r.status == 'closed' %}selected{% endif %}>🔴 ปิดรอบ</option>
+                <option value="completed" {% if r.status == 'completed' %}selected{% endif %}>🏁 เสร็จสิ้น</option>
+              </select>
+            </form>
+          </td>
+
+          <td>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="assign-driver">
+              <input type="hidden" name="round_id" value="{{ r.id }}">
+              
+              <select name="driver_id" class="select-sm" onchange="this.form.submit()">
+                <option value="">- ว่าง -</option>
+                {% for d in drivers %}
+                  <option value="{{ d.id }}" {% if r.driver_id == d.id %}selected{% endif %}>
+                    {{ d.user.username }}
+                  </option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+
+          <td>
+            {% if r.status == 'open' or r.status == 'locked' %}
+              {% if r.used < r.capacity %}
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="pull-queue">
+                  <input type="hidden" name="round_id" value="{{ r.id }}">
+                  <button type="submit" class="btn-pull" title="ดึงออเดอร์ที่รอคิวเข้ามารอบนี้">
+                    <i class="fas fa-magnet"></i> ดึงคิว
+                  </button>
+                </form>
+              {% else %}
+                <span style="color:#aaa; font-size:0.8rem;">รอบเต็ม</span>
+              {% endif %}
+            {% else %}
+              <span style="color:#aaa;">-</span>
+            {% endif %}
+          </td>
+
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" style="text-align:center; padding:40px;">ไม่มีรอบจัดส่งเร็วๆ นี้</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

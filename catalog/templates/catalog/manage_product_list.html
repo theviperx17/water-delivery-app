@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}จัดการสินค้า | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* --- Page Header --- */
+  .page-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 30px; flex-wrap: wrap; gap: 15px;
+  }
+  .page-title { font-size: 1.8rem; font-weight: 600; color: var(--text-dark); margin: 0; }
+  
+  /* --- Table Style --- */
+  .table-card {
+    background: white; border-radius: var(--radius);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f7; overflow: hidden;
+  }
+  .table-responsive { overflow-x: auto; }
+  
+  .modern-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  .modern-table th {
+    background: #f9fbfd; color: var(--text-gray); font-weight: 600;
+    text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;
+    padding: 15px 20px; text-align: left; border-bottom: 2px solid #eef2f7;
+  }
+  .modern-table td {
+    padding: 15px 20px; border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle; color: var(--text-dark); font-size: 0.95rem;
+  }
+  .modern-table tr:last-child td { border-bottom: none; }
+  .modern-table tr:hover { background-color: #fafbfc; }
+
+  /* --- Elements in Table --- */
+  .product-thumb {
+    width: 60px; height: 60px; border-radius: 10px; object-fit: cover;
+    border: 1px solid #eef2f7; background: #fff;
+  }
+  .price-tag { font-weight: 600; color: var(--primary); }
+  
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 50px; font-size: 0.8rem; font-weight: 600;
+  }
+  .status-active { background: #d1fae5; color: #065f46; }
+  .status-inactive { background: #fee2e2; color: #991b1b; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot-green { background: #10b981; }
+  .dot-red { background: #ef4444; }
+
+  /* --- Buttons --- */
+  .btn-add {
+    background: var(--primary); color: white; padding: 10px 20px;
+    border-radius: 50px; text-decoration: none; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 8px; transition: 0.3s;
+    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3); border: none;
+  }
+  .btn-add:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+  .action-group { display: flex; gap: 8px; }
+  .btn-action {
+    padding: 6px 12px; border-radius: 6px; font-size: 0.85rem;
+    text-decoration: none; font-weight: 500; transition: 0.2s; border: 1px solid transparent;
+  }
+  .btn-edit { background: #e0f2f1; color: var(--primary-dark); }
+  .btn-edit:hover { background: var(--primary); color: white; }
+  
+  .btn-delete { background: #fee2e2; color: #dc2626; }
+  .btn-delete:hover { background: #dc2626; color: white; }
+
+  /* --- Empty State --- */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-gray); }
+  .empty-icon { font-size: 3rem; margin-bottom: 15px; color: #e2e8f0; }
+</style>
+
+<div class="page-header">
+  <h1 class="page-title">จัดการสินค้า</h1>
+  <a href="{% url 'catalog:product_create' %}" class="btn-add">
+    <i class="fas fa-plus"></i> เพิ่มสินค้าใหม่
+  </a>
+</div>
+
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="modern-table">
+      <thead>
+        <tr>
+          <th width="100">รูปภาพ</th>
+          <th>ชื่อสินค้า</th>
+          <th>ราคา</th>
+          <th>สถานะ</th>
+          <th width="150">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td>
+              {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-thumb">
+              {% else %}
+                <div class="product-thumb" style="display:flex; align-items:center; justify-content:center; color:#ccc;">
+                  <i class="fas fa-image"></i>
+                </div>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ product.name }}</strong>
+              {% if product.description %}
+                <div style="font-size:0.8rem; color:#888; margin-top:2px;">{{ product.description|truncatechars:30 }}</div>
+              {% endif %}
+            </td>
+            <td><span class="price-tag">฿{{ product.price }}</span></td>
+            <td>
+              {% if product.is_active %}
+                <span class="status-badge status-active">
+                  <span class="dot dot-green"></span> แสดง
+                </span>
+              {% else %}
+                <span class="status-badge status-inactive">
+                  <span class="dot dot-red"></span> ซ่อน
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="action-group">
+                <a href="{% url 'catalog:product_update' product.pk %}" class="btn-action btn-edit" title="แก้ไข">
+                  <i class="fas fa-edit"></i> แก้ไข
+                </a>
+                <a href="{% url 'catalog:product_delete' product.pk %}" class="btn-action btn-delete" title="ลบ">
+                  <i class="fas fa-trash-alt"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <i class="fas fa-box-open empty-icon"></i>
+                <p>ยังไม่มีสินค้าในระบบ</p>
+                <a href="{% url 'catalog:product_create' %}" style="color:var(--primary); font-weight:600;">เพิ่มสินค้าชิ้นแรกเลย!</a>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

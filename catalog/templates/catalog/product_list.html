@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}สินค้า - น้ำดื่ม | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* --- Header --- */
+  .page-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 20px;
+    background: linear-gradient(to bottom, #e0f2f1, rgba(255,255,255,0));
+    border-radius: var(--radius);
+  }
+  .page-title { font-size: 2rem; font-weight: 700; color: var(--text-dark); margin: 0 0 10px; }
+  .page-desc { color: var(--text-gray); font-size: 1.1rem; }
+
+  /* --- Product Grid --- */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 25px;
+  }
+
+  /* --- Card Design --- */
+  .product-card {
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid #eef2f7;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 184, 148, 0.15);
+    border-color: var(--primary);
+  }
+
+  /* Image Area */
+  .img-wrapper {
+    height: 200px;
+    background: #f9fbfd;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .product-img {
+    max-height: 85%; max-width: 85%;
+    object-fit: contain; transition: 0.3s;
+  }
+  .product-card:hover .product-img { transform: scale(1.05); }
+
+  .size-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(255,255,255,0.9); color: var(--text-dark);
+    font-size: 0.8rem; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+
+  /* Content Area */
+  .card-body {
+    padding: 20px;
+    flex: 1;
+    display: flex; flex-direction: column;
+  }
+  .product-name {
+    font-size: 1.1rem; font-weight: 600; color: var(--text-dark);
+    margin: 0 0 5px; line-height: 1.4;
+  }
+  .promo-text {
+    font-size: 0.85rem; color: var(--primary); background: #e0f2f1;
+    display: inline-block; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px;
+  }
+  .price {
+    font-size: 1.3rem; font-weight: 700; color: var(--primary);
+    margin-top: auto; /* ดันราคาไปล่างสุดของ content */
+    margin-bottom: 15px;
+  }
+
+  /* Add to Cart Form */
+  .cart-form {
+    display: grid; grid-template-columns: 70px 1fr; gap: 10px;
+  }
+  .qty-input {
+    width: 100%; padding: 8px; text-align: center;
+    border: 1px solid #ddd; border-radius: 8px; outline: none;
+    font-family: 'Kanit', sans-serif; font-weight: 600;
+  }
+  .qty-input:focus { border-color: var(--primary); }
+
+  .btn-cart {
+    background: var(--primary); color: white; border: none;
+    border-radius: 8px; font-weight: 600; cursor: pointer;
+    transition: 0.3s; font-family: 'Kanit', sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .btn-cart:hover { background: var(--primary-hover); }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    background: white; border-radius: var(--radius); border: 1px dashed #ccc;
+  }
+  .empty-icon { font-size: 3rem; color: #ddd; margin-bottom: 15px; }
+
+</style>
+
+<div class="page-header">
+  <h1 class="page-title">เลือกซื้อน้ำดื่ม</h1>
+  <p class="page-desc">น้ำดื่มสะอาด สดชื่น จัดส่งรวดเร็วถึงบ้านคุณ</p>
+</div>
+
+<div class="container">
+
+  {% if products %}
+    <div class="product-grid">
+      {% for p in products %}
+        <div class="product-card">
+          
+          <div class="img-wrapper">
+            {% if p.size_litre %}
+              <span class="size-badge">{{ p.size_litre }} ลิตร</span>
+            {% endif %}
+
+            {% if p.image %}
+              <img src="{{ p.image.url }}" alt="{{ p.name }}" class="product-img">
+            {% else %}
+              <div style="color:#ccc; text-align:center;">
+                <i class="fas fa-image" style="font-size: 3rem;"></i>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="card-body">
+            <h3 class="product-name">{{ p.name }}</h3>
+            
+            {% if p.promo_text %}
+              <div><small class="promo-text"><i class="fas fa-tag"></i> {{ p.promo_text }}</small></div>
+            {% endif %}
+
+            <div class="price">฿{{ p.price }}</div>
+
+            <form method="post" action="{% url 'orders:add_to_cart' p.id %}" class="cart-form">
+              {% csrf_token %}
+              <input type="number" name="qty" value="1" min="1" class="qty-input" title="จำนวน">
+              
+              <button type="submit" class="btn-cart">
+                <i class="fas fa-cart-plus"></i> ใส่ตะกร้า
+              </button>
+            </form>
+          </div>
+
+        </div>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <div class="empty-state">
+      <i class="fas fa-box-open empty-icon"></i>
+      <h3>ขออภัย สินค้าหมดชั่วคราว</h3>
+      <p style="color:var(--text-gray)">เรากำลังเติมสต็อกสินค้า โปรดกลับมาใหม่เร็วๆ นี้</p>
+    </div>
+  {% endif %}
+
+  <div style="text-align: center; margin-top: 40px;">
+    <a href="{% url 'orders:cart' %}" class="btn btn-outline" style="padding: 10px 30px;">
+      <i class="fas fa-shopping-basket"></i> ไปยังตะกร้าสินค้า
+    </a>
+  </div>
+
+</div>
+{% endblock %}

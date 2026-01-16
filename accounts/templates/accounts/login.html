@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}เข้าสู่ระบบ | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* --- Layout & Wrapper --- */
+  .auth-wrap {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: var(--bg-light); /* ใช้สีเดียวกับ Base */
+  }
+
+  /* --- Main Card --- */
+  .auth-card {
+    background: white;
+    width: 100%;
+    max-width: 900px;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* แบ่งครึ่ง ซ้าย-ขวา */
+    border: 1px solid #eef2f7;
+  }
+
+  /* --- Left Side (Visual) --- */
+  .auth-media {
+    background: linear-gradient(135deg, var(--primary), var(--secondary)); /* ไล่สีเขียว-ฟ้า */
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    color: white;
+    overflow: hidden;
+  }
+  
+  /* ลวดลายตกแต่งพื้นหลัง */
+  .auth-media::before {
+    content: ""; position: absolute; width: 300px; height: 300px;
+    background: rgba(255,255,255,0.1); border-radius: 50%; top: -50px; left: -50px;
+  }
+  .auth-media::after {
+    content: ""; position: absolute; width: 200px; height: 200px;
+    background: rgba(255,255,255,0.1); border-radius: 50%; bottom: -20px; right: -20px;
+  }
+
+  .visual-content { position: relative; z-index: 2; }
+  .visual-img {
+    max-width: 80%;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+  }
+
+  /* --- Right Side (Form) --- */
+  .auth-form {
+    padding: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .auth-header { margin-bottom: 30px; }
+  .auth-title { font-size: 2rem; font-weight: 600; color: var(--text-dark); margin: 0 0 10px; }
+  .auth-subtitle { color: var(--text-gray); font-size: 0.95rem; margin: 0; }
+
+  /* --- Form Elements --- */
+  .field { margin-bottom: 20px; }
+  .label {
+    display: block; margin-bottom: 8px; font-weight: 500;
+    color: var(--text-dark); font-size: 0.9rem;
+  }
+  .input {
+    width: 100%; padding: 12px 16px;
+    border: 2px solid #eef2f7; border-radius: 12px;
+    font-size: 1rem; font-family: 'Kanit', sans-serif;
+    outline: none; transition: all 0.3s; background: #fdfdfd;
+  }
+  .input:focus {
+    border-color: var(--primary); background: white;
+    box-shadow: 0 0 0 4px rgba(0, 184, 148, 0.1);
+  }
+
+  /* Password Toggle */
+  .pwd-wrapper { position: relative; }
+  .toggle-pwd {
+    position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text-gray); cursor: pointer;
+    font-size: 0.9rem; padding: 0;
+  }
+  .toggle-pwd:hover { color: var(--primary); }
+
+  /* Options Row */
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 30px; font-size: 0.9rem;
+  }
+  .checkbox-label {
+    display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-gray);
+  }
+  .checkbox-label input { accent-color: var(--primary); width: 16px; height: 16px; }
+  .link-forgot { color: var(--secondary); text-decoration: none; font-weight: 500; }
+  .link-forgot:hover { text-decoration: underline; }
+
+  /* Buttons */
+  .btn-submit {
+    width: 100%; padding: 14px;
+    background: var(--primary); color: white;
+    border: none; border-radius: 50px;
+    font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+  }
+  .btn-submit:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 184, 148, 0.4);
+  }
+
+  /* Divider & Footer */
+  .auth-footer { text-align: center; margin-top: 25px; font-size: 0.95rem; color: var(--text-gray); }
+  .link-register { color: var(--primary); font-weight: 600; text-decoration: none; }
+  .link-register:hover { text-decoration: underline; }
+
+  /* --- Messages --- */
+  .msg { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem; display: flex; align-items: center; gap: 10px; }
+  .msg.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+  .msg.success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+  .msg.info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+  /* --- Responsive --- */
+  @media (max-width: 850px) {
+    .auth-card { grid-template-columns: 1fr; max-width: 500px; }
+    .auth-media { display: none; } /* ซ่อนรูปบนมือถือ */
+    .auth-form { padding: 40px 30px; }
+  }
+</style>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    
+    <div class="auth-media">
+      <div class="visual-content">
+        <img src="{% static 'images/water-login.png' %}" alt="Water Delivery Logo" class="visual-img">
+        <h2 style="font-size: 1.8rem; margin: 0 0 10px;">ยินดีต้อนรับกลับมา!</h2>
+        <p style="opacity: 0.9; margin: 0;">บริการส่งน้ำดื่มคุณภาพ <br> สะอาด ปลอดภัย ถึงหน้าบ้านคุณ</p>
+      </div>
+    </div>
+
+    <div class="auth-form">
+      <div class="auth-header">
+        <h1 class="auth-title">เข้าสู่ระบบ</h1>
+        <p class="auth-subtitle">กรุณากรอกข้อมูลเพื่อเข้าใช้งานบัญชีของคุณ</p>
+      </div>
+
+      {% if form.errors %}
+        <div class="msg error">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</span>
+        </div>
+      {% endif %}
+
+      {% if messages %}
+        {% for m in messages %}
+          <div class="msg {{ m.tags }}">
+            <i class="fas fa-info-circle"></i> {{ m }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" action="">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+        <div class="field">
+          <label class="label">ชื่อผู้ใช้</label>
+          <input class="input" type="text" name="username" placeholder="กรอกชื่อผู้ใช้ของคุณ" autofocus required>
+        </div>
+
+        <div class="field">
+          <label class="label">รหัสผ่าน</label>
+          <div class="pwd-wrapper">
+            <input id="pwd" class="input" type="password" name="password" placeholder="••••••••" required>
+            <button type="button" id="togglePwd" class="toggle-pwd" aria-label="แสดงรหัสผ่าน">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="row">
+          <label class="checkbox-label">
+            <input type="checkbox" name="remember"> จำการเข้าสู่ระบบ
+          </label>
+          <a class="link-forgot" href="{% url 'accounts:password_reset' %}">ลืมรหัสผ่าน?</a>
+        </div>
+
+        <button class="btn-submit" type="submit">
+          เข้าสู่ระบบ <i class="fas fa-arrow-right" style="margin-left: 8px; font-size: 0.8em;"></i>
+        </button>
+
+        <div class="auth-footer">
+          ยังไม่มีบัญชีสมาชิก? 
+          <a class="link-register" href="{% url 'accounts:signup' %}">สมัครสมาชิกฟรี</a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const toggleBtn = document.getElementById('togglePwd');
+  const pwdInput = document.getElementById('pwd');
+  const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+
+  if(toggleBtn && pwdInput) {
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = pwdInput.type === 'password';
+      pwdInput.type = isPassword ? 'text' : 'password';
+      
+      if(icon) {
+        if(isPassword) {
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+        } else {
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+        }
+      }
+    });
+  }
+</script>
+
+{% endblock %}

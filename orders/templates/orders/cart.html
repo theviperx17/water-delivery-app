@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ตะกร้าสินค้า | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* --- Layout --- */
+  .cart-header { margin-bottom: 30px; }
+  .page-title { font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin: 0; }
+  
+  .cart-container {
+    display: grid;
+    grid-template-columns: 1fr 350px; /* แบ่งซ้ายกว้าง ขวา 350px */
+    gap: 30px;
+    align-items: start;
+  }
+
+  /* --- Cart Items (Left) --- */
+  .cart-items-card {
+    background: white; border-radius: var(--radius);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f7; overflow: hidden;
+  }
+
+  .cart-table { width: 100%; border-collapse: collapse; }
+  .cart-table th {
+    text-align: left; padding: 15px 20px; background: #f9fbfd;
+    color: var(--text-gray); font-weight: 600; font-size: 0.9rem;
+    border-bottom: 1px solid #eef2f7;
+  }
+  .cart-table td {
+    padding: 20px; border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+  }
+  .cart-table tr:last-child td { border-bottom: none; }
+
+  /* Product Info in Table */
+  .item-flex { display: flex; align-items: center; gap: 15px; }
+  .item-img {
+    width: 70px; height: 70px; object-fit: contain;
+    border-radius: 10px; background: #fff; border: 1px solid #eee; padding: 5px;
+  }
+  .item-details h4 { margin: 0 0 5px; font-size: 1rem; color: var(--text-dark); }
+  .item-price { color: var(--primary); font-weight: 600; }
+
+  /* Quantity Badge */
+  .qty-badge {
+    display: inline-block; background: #e0f2f1; color: var(--primary-dark);
+    padding: 4px 12px; border-radius: 50px; font-weight: bold; font-size: 0.9rem;
+  }
+
+  /* Remove Button */
+  .btn-remove {
+    color: #ff7675; background: none; border: none; cursor: pointer;
+    font-size: 0.9rem; transition: 0.3s; padding: 8px; border-radius: 50%;
+  }
+  .btn-remove:hover { background: #ffecec; }
+
+  /* --- Summary Card (Right) --- */
+  .summary-card {
+    background: white; border-radius: var(--radius);
+    padding: 25px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f7;
+    position: sticky; top: 100px; /* ให้เมนูลอยตามเวลาเลื่อนลง */
+  }
+  
+  .summary-header { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; }
+  
+  .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; color: var(--text-gray); font-size: 0.95rem; }
+  .summary-row.total {
+    font-size: 1.3rem; font-weight: 700; color: var(--text-dark);
+    margin-top: 20px; border-top: 2px solid #f1f5f9; padding-top: 15px;
+  }
+  .summary-row.total span:last-child { color: var(--primary); }
+
+  /* Buttons */
+  .btn-checkout {
+    display: block; width: 100%; text-align: center;
+    background: var(--primary); color: white; padding: 14px;
+    border-radius: 50px; text-decoration: none; font-weight: 600;
+    margin-top: 25px; box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3);
+    transition: 0.3s; border: none; cursor: pointer;
+  }
+  .btn-checkout:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+  .btn-back {
+    display: block; text-align: center; margin-top: 15px;
+    color: var(--text-gray); text-decoration: none; font-size: 0.9rem;
+  }
+  .btn-back:hover { text-decoration: underline; }
+
+  /* Empty State */
+  .empty-cart { text-align: center; padding: 60px 20px; background: white; border-radius: var(--radius); border: 1px dashed #ccc; }
+  .empty-icon { font-size: 4rem; color: #e2e8f0; margin-bottom: 20px; }
+
+  /* Responsive */
+  @media (max-width: 850px) {
+    .cart-container { grid-template-columns: 1fr; }
+    .summary-card { position: static; } /* ยกเลิก sticky บนมือถือ */
+    .item-img { width: 50px; height: 50px; }
+  }
+</style>
+
+<div class="cart-header">
+  <h1 class="page-title">ตะกร้าสินค้าของคุณ</h1>
+  {% if cart_items %}
+    <p style="color:var(--text-gray);">คุณมีสินค้า {{ cart_items|length }} รายการในตะกร้า</p>
+  {% endif %}
+</div>
+
+{% if cart_items %}
+<div class="cart-container">
+  
+  <div class="cart-items-card">
+    <table class="cart-table">
+      <thead>
+        <tr>
+          <th>สินค้า</th>
+          <th style="text-align:center;">จำนวน</th>
+          <th style="text-align:right;">ราคา</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in cart_items %}
+        <tr>
+          <td>
+            <div class="item-flex">
+              {% if item.product.image %}
+                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="item-img">
+              {% else %}
+                <div class="item-img" style="display:flex; align-items:center; justify-content:center; color:#ccc;">
+                  <i class="fas fa-image"></i>
+                </div>
+              {% endif %}
+              
+              <div class="item-details">
+                <h4>{{ item.product.name }}</h4>
+                <span style="font-size:0.85rem; color:var(--text-gray);">ขนาด: {{ item.product.size_litre }} ลิตร</span>
+              </div>
+            </div>
+          </td>
+          <td style="text-align:center;">
+            <span class="qty-badge">{{ item.quantity }}</span>
+          </td>
+          <td style="text-align:right;">
+            <div class="item-price">฿{{ item.total_price }}</div>
+            <div style="font-size:0.8rem; color:#aaa;">(@{{ item.price }})</div>
+          </td>
+          <td style="text-align:center;">
+            <a href="{% url 'orders:remove_from_cart' item.product.id %}" class="btn-remove" title="ลบรายการนี้">
+              <i class="fas fa-trash-alt"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="summary-card">
+    <div class="summary-header">สรุปยอดคำสั่งซื้อ</div>
+    
+    <div class="summary-row">
+      <span>ยอดรวมสินค้า</span>
+      <span>฿{{ total_price }}</span>
+    </div>
+    <div class="summary-row">
+      <span>ค่าจัดส่ง</span>
+      <span style="color:var(--primary);">ฟรี</span>
+    </div>
+    <div class="summary-row total">
+      <span>ยอดสุทธิ</span>
+      <span>฿{{ total_price }}</span>
+    </div>
+
+    <a href="{% url 'orders:checkout' %}" class="btn-checkout">
+      ดำเนินการสั่งซื้อ <i class="fas fa-arrow-right"></i>
+    </a>
+    
+    <a href="{% url 'catalog:product_list' %}" class="btn-back">
+      <i class="fas fa-chevron-left"></i> เลือกซื้อสินค้าเพิ่มเติม
+    </a>
+  </div>
+
+</div>
+
+{% else %}
+<div class="empty-cart">
+  <div class="empty-icon"><i class="fas fa-shopping-cart"></i></div>
+  <h2>ตะกร้าสินค้าว่างเปล่า</h2>
+  <p style="color:var(--text-gray); margin-bottom:25px;">คุณยังไม่ได้เลือกสินค้าใดๆ ลงในตะกร้า</p>
+  <a href="{% url 'catalog:product_list' %}" class="btn btn-primary" style="padding: 12px 30px; border-radius: 50px;">
+    ไปเลือกซื้อสินค้าเลย
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

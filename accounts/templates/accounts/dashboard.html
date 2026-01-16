@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}แดชบอร์ด | Water Delivery{% endblock %}
+
+{% block content %}
+<style>
+  /* --- Dashboard Layout --- */
+  .dashboard-header { margin-bottom: 30px; }
+  .dashboard-title { font-size: 1.8rem; font-weight: 600; color: var(--text-dark); margin: 0; }
+  .dashboard-subtitle { color: var(--text-gray); font-size: 1rem; }
+
+  /* --- Cards --- */
+  .dashboard-grid {
+    display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 30px;
+  }
+  .dash-card {
+    background: white; border-radius: 15px; padding: 25px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05); border: 1px solid #eef2f7;
+    position: relative; overflow: hidden; margin-bottom: 20px;
+  }
+
+  /* --- Promo --- */
+  .promo-card {
+    background: linear-gradient(135deg, #00b894, #0984e3); /* สีธีม Mint/Blue */
+    color: white; border: none; display: flex; align-items: center; gap: 20px; margin-bottom: 25px;
+  }
+  .promo-icon {
+    font-size: 2.5rem; background: rgba(255,255,255,0.2); width: 60px; height: 60px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  }
+  .promo-content h4 { margin: 0 0 5px; font-size: 1.2rem; }
+  .promo-content p { margin: 0; font-size: 0.95rem; opacity: 0.9; }
+  .promo-code { background: white; color: #0984e3; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; }
+
+  /* --- Welcome & Stats --- */
+  .welcome-card { display: flex; flex-direction: column; justify-content: center; }
+  .profile-prompt {
+    margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .btn-small {
+    background: #e0f2f1; color: #00695c; padding: 6px 14px; border-radius: 50px;
+    text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: 0.3s; white-space: nowrap;
+    display: inline-block; cursor: pointer;
+  }
+  .btn-small:hover { background: #00695c; color: white; }
+
+  .stat-card { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .stat-icon { font-size: 2rem; color: #fab1a0; margin-bottom: 10px; }
+  .stat-value { font-size: 2.5rem; font-weight: 700; color: #2d3436; line-height: 1; }
+  .stat-label { color: #636e72; font-size: 0.9rem; margin-top: 5px; }
+
+  /* --- Table --- */
+  .table-responsive { overflow-x: auto; }
+  .table { width: 100%; border-collapse: collapse; min-width: 600px; }
+  .table th { text-align: left; padding: 12px 15px; color: #636e72; font-weight: 500; border-bottom: 2px solid #f1f5f9; font-size: 0.9rem; }
+  .table td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: #2d3436; font-size: 0.95rem; }
+  
+  /* Badges */
+  .badge { padding: 5px 10px; border-radius: 50px; font-size: 0.8rem; font-weight: 500; display: inline-block; }
+  .bg-warning { background: #fff3cd; color: #856404; }
+  .bg-info { background: #cff4fc; color: #055160; }
+  .bg-success { background: #d1fae5; color: #065f46; }
+  .bg-danger { background: #f8d7da; color: #721c24; }
+  .bg-secondary { background: #e2e3e5; color: #383d41; }
+
+  /* Empty State */
+  .empty-state { text-align: center; padding: 50px 20px; }
+  .empty-icon { font-size: 4rem; color: #e2e8f0; margin-bottom: 20px; }
+  
+  /* Roles */
+  .role-badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
+  .role-customer { background: #e0f2f1; color: #00695c; }
+  .role-driver { background: #fff3cd; color: #d97706; }
+  .role-admin { background: #e0e7ff; color: #4338ca; }
+
+  @media (max-width: 850px) { .dashboard-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="dashboard-header">
+  <h1 class="dashboard-title">แดชบอร์ด</h1>
+  <p class="dashboard-subtitle">จัดการข้อมูลและติดตามสถานะคำสั่งซื้อของคุณ</p>
+</div>
+
+{% if role == 'customer' %}
+  <div class="dash-card promo-card">
+    <div class="promo-icon"><i class="fas fa-gift"></i></div>
+    <div class="promo-content">
+      <h4>โปรโมชั่นพิเศษสำหรับคุณ!</h4>
+      <p>รับส่วนลด 10% สำหรับการสั่งซื้อครั้งแรก ใช้โค้ด <span class="promo-code">NEW10</span></p>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="dash-card welcome-card">
+      <div>
+        <span class="role-badge role-customer"><i class="fas fa-user"></i> ลูกค้าทั่วไป</span>
+        <h3 style="margin: 0 0 5px;">สวัสดีคุณ {{ user.first_name|default:user.username }}!</h3>
+        <p style="color: #636e72; margin: 0;">ยินดีต้อนรับกลับสู่ WaterDelivery</p>
+      </div>
+
+      {% if not profile.default_address %}
+        <div class="profile-prompt">
+          <div style="flex: 1;">
+            <strong style="color: #e17055;"><i class="fas fa-exclamation-circle"></i> โปรไฟล์ยังไม่สมบูรณ์</strong>
+            <p style="font-size: 0.85rem; margin: 4px 0 0; color: #636e72;">เพิ่มที่อยู่จัดส่งเพื่อความรวดเร็ว</p>
+          </div>
+          <a href="{% url 'accounts:profile' %}" class="btn-small">เพิ่มที่อยู่</a>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="dash-card stat-card">
+      <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+      <div class="stat-value">{{ total_spent|intcomma }}</div>
+      <div class="stat-label">ยอดใช้จ่ายรวม (บาท)</div>
+    </div>
+  </div>
+
+  <div class="dash-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3 style="margin: 0;">คำสั่งซื้อล่าสุด</h3>
+    </div>
+
+    {% if my_orders %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>หมายเลข</th>
+              <th>สถานะ</th>
+              <th>ยอดรวม</th>
+              <th>วันที่</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in my_orders %}
+              <tr>
+                <td><strong>#{{ order.id }}</strong></td>
+                <td>
+                  {% if order.status == 'new' %}<span class="badge bg-warning">รอชำระ/ใหม่</span>
+                  {% elif order.status == 'processing' %}<span class="badge bg-info">กำลังเตรียม</span>
+                  {% elif order.status == 'out_for_delivery' %}<span class="badge bg-info">กำลังจัดส่ง</span>
+                  {% elif order.status == 'delivered' or order.status == 'completed' %}<span class="badge bg-success">สำเร็จ</span>
+                  {% else %}<span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td style="font-weight: 600;">฿{{ order.total_price|intcomma }}</td>
+                <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
+                <td style="text-align: right;">
+                    <span style="font-size:0.8rem; color:#888;">{{ order.round }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-shopping-basket"></i></div>
+        <h4>ยังไม่มีคำสั่งซื้อ</h4>
+        <p style="color:#636e72">สั่งน้ำดื่มสะอาดเพื่อสุขภาพที่ดีของคุณได้เลย</p>
+        <a class="btn btn-primary" href="{% url 'catalog:product_list' %}"><i class="fas fa-cart-plus"></i> สั่งซื้อเลย</a>
+      </div>
+    {% endif %}
+  </div>
+
+{% elif role == 'driver' %}
+  <div class="dashboard-grid">
+    <div class="dash-card welcome-card">
+      <span class="role-badge role-driver"><i class="fas fa-truck"></i> พนักงานส่งน้ำ</span>
+      <h3>สวัสดี {{ user.first_name }}</h3>
+      <p style="color: #636e72;">วันนี้ขับรถปลอดภัยนะครับ 🛵</p>
+    </div>
+    <div class="dash-card stat-card">
+        <div class="stat-icon" style="color: #00b894;"><i class="fas fa-clipboard-check"></i></div>
+        <div class="stat-value">{{ driver_jobs|length }}</div>
+        <div class="stat-label">งานทั้งหมด</div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:20px;">📦 งานที่ได้รับมอบหมาย</h3>
+  
+  {% if driver_jobs %}
+    {% for job in driver_jobs %}
+      <div class="dash-card" style="border-left: 5px solid {% if job.status == 'completed' %}#00b894{% elif job.status == 'out_for_delivery' %}#0984e3{% else %}#fab1a0{% endif %};">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+            <div>
+                <h4 style="margin:0;">Order #{{ job.id }}</h4>
+                <small class="text-muted">{{ job.created_at|date:"d M H:i" }}</small>
+            </div>
+            <span class="badge {% if job.status == 'completed' %}bg-success{% elif job.status == 'out_for_delivery' %}bg-info{% else %}bg-warning{% endif %}">
+                {{ job.get_status_display }}
+            </span>
+        </div>
+        
+        <p style="margin-bottom:5px;"><i class="fas fa-user"></i> {{ job.customer.user.first_name }} ({{ job.customer.phone }})</p>
+        <p style="margin-bottom:15px; color:#2d3436;"><i class="fas fa-map-marker-alt text-danger"></i> {{ job.address }}</p>
+        <p style="margin-bottom:15px; font-size:0.9rem; color:#636e72;">
+            <i class="fas fa-clock"></i> รอบ: {{ job.round }} <br>
+            <i class="fas fa-money-bill"></i> ยอดเก็บเงิน: <strong>{{ job.total_price|intcomma }} บาท</strong>
+        </p>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom: 10px;">
+            <a href="tel:{{ job.customer.phone }}" class="btn btn-outline-secondary btn-sm" style="text-align:center;">
+                <i class="fas fa-phone"></i> โทรหาลูกค้า
+            </a>
+            
+            {% if job.address_lat and job.address_lng %}
+            <a href="https://www.google.com/maps/search/?api=1&query={{ job.address_lat }},{{ job.address_lng }}" 
+               target="_blank" class="btn btn-primary btn-sm" style="text-align:center; background:#00b894; border:none;">
+                <i class="fas fa-location-arrow"></i> นำทาง
+            </a>
+            {% else %}
+            <a href="https://www.google.com/maps/search/?api=1&query={{ job.address }}" target="_blank" class="btn btn-primary btn-sm" style="background:#00b894; border:none;">
+                 <i class="fas fa-location-arrow"></i> นำทาง (ชื่อ)
+            </a>
+            {% endif %}
+        </div>
+
+        {% if job.status != 'completed' %}
+            <form action="{% url 'accounts:complete_delivery' job.id %}" method="POST" style="width: 100%;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success" style="width: 100%; font-weight:bold; padding: 10px;" onclick="return confirm('ยืนยันว่าส่งสินค้าและรับเงินเรียบร้อยแล้ว?');">
+                    ✅ ส่งงานสำเร็จ
+                </button>
+            </form>
+        {% else %}
+            <button class="btn btn-secondary" style="width: 100%;" disabled>
+                <i class="fas fa-check-circle"></i> ส่งเรียบร้อยแล้ว
+            </button>
+        {% endif %}
+
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="fas fa-coffee"></i></div>
+        <h4>ยังไม่มีงานใหม่</h4>
+        <p>พักผ่อนก่อนครับ เดี๋ยวงานมาจะเด้งขึ้นเอง</p>
+    </div>
+  {% endif %}
+
+{% elif role == 'staff_admin' %}
+  <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+    <div class="dash-card stat-card">
+      <div class="stat-value">{{ orders_today }}</div>
+      <div class="stat-label">ออเดอร์วันนี้</div>
+    </div>
+    <div class="dash-card stat-card">
+      <div class="stat-value" style="color: #e17055;">{{ orders_new }}</div>
+      <div class="stat-label">รอจัดส่ง (New)</div>
+    </div>
+    <div class="dash-card stat-card">
+      <div class="stat-value" style="color: #0984e3;">{{ orders_out }}</div>
+      <div class="stat-label">กำลังจัดส่ง</div>
+    </div>
+  </div>
+
+  <div class="dash-card" style="text-align: center; padding:40px;">
+    <div style="font-size:3rem; color:#2d3436; margin-bottom:20px;"><i class="fas fa-cogs"></i></div>
+    <h3>Admin Management Panel</h3>
+    <p style="color:#636e72; margin-bottom:30px;">เข้าสู่ระบบจัดการหลังบ้าน เพื่อจัดการออเดอร์ สินค้า และรอบจัดส่ง</p>
+    <a href="/admin/" class="btn btn-primary btn-lg" target="_blank" style="padding:10px 30px;">
+        ไปยังหน้าผู้ดูแลระบบ <i class="fas fa-arrow-right"></i>
+    </a>
+  </div>
+
+{% endif %} 
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}งานส่งของ (Driver) | Water Delivery{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <style>
+    /* --- Header & GPS --- */
+    .driver-header {
+      background: white; padding: 20px; border-radius: var(--radius);
+      border: 1px solid #eef2f7; margin-bottom: 20px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .driver-title { margin: 0; font-size: 1.4rem; font-weight: 700; color: var(--text-dark); }
+    
+    .gps-control {
+      display: flex; align-items: center; gap: 10px;
+      background: #f8fafc; padding: 8px 15px; border-radius: 50px; border: 1px solid #e2e8f0;
+    }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; transition: 0.3s; }
+    .status-dot.active { background: #10b981; box-shadow: 0 0 8px #10b981; }
+    
+    .btn-gps {
+      background: var(--text-dark); color: white; border: none; padding: 6px 12px;
+      border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: 0.3s;
+    }
+    .btn-gps.active { background: #ef4444; } /* สีแดงเมื่อกดปิด */
+
+    /* --- Job Card --- */
+    .job-card {
+      background: white; border-radius: 16px; overflow: hidden;
+      border: 1px solid #eef2f7; margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    }
+    
+    .job-header {
+      padding: 15px 20px; background: #f9fbfd; border-bottom: 1px solid #eef2f7;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .job-id { font-weight: 700; font-size: 1.1rem; color: var(--text-dark); }
+    
+    .job-body { padding: 20px; }
+    .info-row { margin-bottom: 10px; display: flex; gap: 10px; color: var(--text-dark); }
+    .info-row i { color: var(--primary); margin-top: 4px; width: 20px; text-align: center; }
+    
+    /* Map inside card */
+    .job-map {
+      height: 200px; width: 100%; border-radius: 12px;
+      margin: 15px 0; border: 1px solid #ddd; z-index: 0;
+    }
+
+    /* Buttons */
+    .btn-nav {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #e0f2f1; color: var(--primary-dark); text-decoration: none;
+      padding: 8px 15px; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+      margin-bottom: 15px;
+    }
+    .btn-nav:hover { background: #b2dfdb; }
+
+    .status-form {
+      display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;
+    }
+    .select-status {
+      flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ddd; outline: none;
+    }
+    .btn-update {
+      background: var(--primary); color: white; border: none; padding: 0 20px;
+      border-radius: 8px; font-weight: 600; cursor: pointer;
+    }
+    
+    /* Badge */
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .st-new { background: #fff3cd; color: #856404; }
+    .st-done { background: #d1fae5; color: #065f46; }
+    
+    .empty-state { text-align: center; padding: 50px; color: #aaa; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="driver-header">
+  <h2 class="driver-title"><i class="fas fa-shipping-fast"></i> งานของฉัน</h2>
+  
+  <div class="gps-control">
+    <div id="gps-dot" class="status-dot"></div>
+    <span id="gps-text" style="font-size:0.9rem; color:#555;">GPS: ปิด</span>
+    <button id="btn-share" class="btn-gps">เปิดแชร์พิกัด</button>
+  </div>
+</div>
+
+{% if jobs %}
+  {% for o in jobs %}
+    <div class="job-card">
+      
+      <div class="job-header">
+        <div class="job-id">#{{ o.id }}</div>
+        <div>
+          <span class="badge st-new">{{ o.get_status_display }}</span>
+        </div>
+      </div>
+
+      <div class="job-body">
+        <div class="info-row">
+          <i class="fas fa-map-marker-alt"></i>
+          <div>
+            <strong>ที่อยู่จัดส่ง:</strong><br>
+            {{ o.address }}
+          </div>
+        </div>
+        
+        {% if o.address_lat and o.address_lng %}
+          <a href="https://www.google.com/maps/dir/?api=1&destination={{ o.address_lat }},{{ o.address_lng }}" target="_blank" class="btn-nav">
+            <i class="fas fa-location-arrow"></i> นำทาง (Google Maps)
+          </a>
+          
+          <div id="job-map-{{ o.id }}" class="job-map" 
+               data-lat="{{ o.address_lat }}" 
+               data-lng="{{ o.address_lng }}" 
+               data-id="{{ o.id }}">
+          </div>
+        {% else %}
+          <div style="color:orange; font-size:0.9rem; margin-bottom:10px;">
+            <i class="fas fa-exclamation-triangle"></i> ไม่มีพิกัด GPS
+          </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'orders:driver_update_status' o.id %}" class="status-form">
+          {% csrf_token %}
+          <select name="status" class="select-status">
+            {% for val, label in o.STATUS_CHOICES %}
+              <option value="{{ val }}" {% if o.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn-update">อัปเดต</button>
+        </form>
+      </div>
+
+    </div>
+  {% endfor %}
+
+{% else %}
+  <div class="empty-state">
+    <i class="fas fa-clipboard-check" style="font-size:3rem; margin-bottom:15px;"></i>
+    <h3>ยังไม่มีงานเข้ามา</h3>
+    <p>รอรับมอบหมายงานจากแอดมิน</p>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+  // === 1. GPS Logic ===
+  let watchId = null;
+  const btnShare = document.getElementById('btn-share');
+  const gpsDot = document.getElementById('gps-dot');
+  const gpsText = document.getElementById('gps-text');
+
+  function sendLocation(lat, lng) {
+    fetch('{% url "orders:driver_update_location" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({lat: lat, lng: lng})
+    }).catch(err => console.error('GPS Error:', err));
+  }
+
+  btnShare.onclick = () => {
+    if (watchId) {
+      // ปิด GPS
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      btnShare.innerText = "เปิดแชร์พิกัด";
+      btnShare.classList.remove('active');
+      gpsDot.classList.remove('active');
+      gpsText.innerText = "GPS: ปิด";
+    } else {
+      // เปิด GPS
+      if (navigator.geolocation) {
+        gpsText.innerText = "กำลังค้นหา...";
+        watchId = navigator.geolocation.watchPosition(
+          (p) => {
+            const lat = p.coords.latitude;
+            const lng = p.coords.longitude;
+            
+            gpsDot.classList.add('active');
+            gpsText.innerText = "GPS: ทำงาน";
+            btnShare.innerText = "หยุดแชร์";
+            btnShare.classList.add('active');
+            
+            sendLocation(lat, lng);
+          },
+          (err) => {
+            alert('ไม่สามารถระบุตำแหน่งได้: ' + err.message);
+            gpsText.innerText = "GPS: ผิดพลาด";
+          },
+          { enableHighAccuracy: true }
+        );
+      } else {
+        alert('Browser ไม่รองรับ GPS');
+      }
+    }
+  };
+
+  // === 2. Render Mini Maps for Jobs ===
+  document.addEventListener("DOMContentLoaded", function() {
+    const maps = document.querySelectorAll('.job-map');
+    
+    maps.forEach(el => {
+      const lat = parseFloat(el.dataset.lat);
+      const lng = parseFloat(el.dataset.lng);
+      const id = el.dataset.id;
+
+      if (lat && lng) {
+        const m = L.map('job-map-' + id, {
+            zoomControl: false, 
+            dragging: false, 
+            scrollWheelZoom: false
+        }).setView([lat, lng], 15);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(m);
+        
+        L.marker([lat, lng]).addTo(m).bindPopup('ปลายทาง #' + id);
+      }
+    });
+  });
+</script>
+{% endblock %}

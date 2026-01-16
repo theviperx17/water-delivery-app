@@ -1,0 +1,286 @@
+{% load static %}
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Water Delivery{% endblock %}</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --primary: #00b894;
+      --primary-hover: #00a383;
+      --text-dark: #2d3436;
+      --text-gray: #636e72;
+      --bg-light: #f9fbfd;
+      --white: #ffffff;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Kanit', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 0.8rem 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-dark);
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+    .nav-brand img { height: 35px; }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: var(--text-dark);
+      font-weight: 500;
+      transition: 0.3s;
+      font-size: 0.95rem;
+    }
+    .nav-link:hover { color: var(--primary); }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 20px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-size: 0.9rem;
+      border: none;
+      cursor: pointer;
+      font-family: 'Kanit', sans-serif;
+      display: inline-block;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-outline { border: 1px solid var(--primary); color: var(--primary); background: transparent; }
+    
+    .btn-logout-nav {
+      background: none;
+      border: 1px solid #dfe6e9;
+      padding: 5px 15px;
+      border-radius: 50px;
+      color: var(--text-gray);
+      cursor: pointer;
+      font-family: 'Kanit', sans-serif;
+      font-size: 0.9rem;
+    }
+    .btn-logout-nav:hover { background: #f1f5f9; }
+
+    /* Mobile Toggle */
+    .nav-toggle { display: none; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+
+    /* Alert Messages */
+    .alert { padding: 15px; margin: 20px 0; border-radius: var(--radius); }
+    .alert--success { background: #d1fae5; color: #065f46; }
+    .alert--error { background: #fee2e2; color: #991b1b; }
+    .alert--warning { background: #fff3cd; color: #856404; }
+    .alert--info { background: #dbeafe; color: #1e40af; }
+
+    /* Main Content */
+    main { flex: 1; padding: 40px 0; }
+
+    /* Footer */
+    .footer {
+      background: white;
+      border-top: 1px solid #eee;
+      padding: 40px 0;
+      margin-top: auto;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+    }
+    .footer-list { list-style: none; }
+    .footer-list li { margin-bottom: 10px; }
+    .footer-list a, .footer-logout-btn {
+      text-decoration: none;
+      color: var(--text-gray);
+      background: none;
+      border: none;
+      font-family: 'Kanit', sans-serif;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-toggle { display: block; }
+      .nav-menu {
+        display: none;
+        position: absolute;
+        top: 100%; left: 0; right: 0;
+        background: white;
+        flex-direction: column;
+        padding: 20px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      }
+      .nav-menu.is-open { display: flex; }
+    }
+  </style> 
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container nav-container">
+      <a class="nav-brand" href="{% url 'landing' %}">
+        <img src="{% static 'images/water-login.png' %}" alt="Logo">
+        <span>WaterDelivery</span>
+      </a>
+
+      <button class="nav-toggle" id="navToggle"><i class="fas fa-bars"></i></button>
+
+      <nav class="nav-menu" id="navMenu">
+        <a class="nav-link" href="{% url 'landing' %}">หน้าแรก</a>
+        <a class="nav-link" href="{% url 'catalog:product_list' %}">สินค้า</a>
+        
+        <a class="nav-link" href="{% url 'orders:cart' %}" style="position: relative;">
+          <i class="fas fa-shopping-cart"></i> ตะกร้า 
+          {% if request.session.cart|length > 0 %}
+            <span style="background:#ff7675; color:white; border-radius:50%; padding:2px 6px; font-size:0.7rem; position:absolute; top:-5px; right:-10px;">
+              {{ request.session.cart|length }}
+            </span>
+          {% endif %}
+        </a>
+
+        {% if request.user.is_authenticated %}
+          <div style="width:1px; height:20px; background:#eee; margin:0 5px;"></div>
+          
+          {% if request.user.is_staff %}
+            <a class="nav-link" href="{% url 'orders:manage_orders' %}" style="color:#e17055;">
+              <i class="fas fa-tasks"></i> จัดการออเดอร์
+            </a>
+            <a class="nav-link" href="{% url 'catalog:manage_product_list' %}" style="color:#e17055;">
+              <i class="fas fa-box"></i> คลังสินค้า
+            </a>
+          
+          {% elif request.user.customerprofile.role == 'driver' %}
+            <a class="nav-link" href="{% url 'orders:driver_jobs' %}" style="color:#0984e3;">
+              <i class="fas fa-truck"></i> งานส่งของ
+            </a>
+          
+          {% else %}
+            <a class="nav-link" href="{% url 'accounts:dashboard' %}">แดชบอร์ด</a>
+          {% endif %}
+
+          <a class="nav-link" href="{% url 'accounts:profile' %}" title="โปรไฟล์">
+            <i class="fas fa-user-circle" style="font-size:1.1rem;"></i>
+            {{ request.user.first_name|default:request.user.username }}
+          </a>
+          
+          <form action="{% url 'accounts:logout' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn-logout-nav" title="ออกจากระบบ">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </form>
+
+        {% else %}
+          <a class="btn btn-outline" href="{% url 'accounts:login' %}">เข้าสู่ระบบ</a>
+          <a class="btn btn-primary" href="{% url 'accounts:signup' %}">สมัครสมาชิก</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% if messages %}
+  <div class="container">
+    {% for m in messages %}
+      <div class="alert alert--{{ m.tags }}">{{ m }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h4>WaterDelivery</h4>
+          <p style="color:var(--text-gray)">บริการส่งน้ำดื่มสะอาด ถึงหน้าบ้านคุณ</p>
+        </div>
+        <div>
+          <h4>เมนู</h4>
+          <ul class="footer-list">
+            <li><a href="{% url 'landing' %}">หน้าแรก</a></li>
+            <li><a href="{% url 'catalog:product_list' %}">สินค้า</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>สมาชิก</h4>
+          <ul class="footer-list">
+            {% if request.user.is_authenticated %}
+              <li><a href="{% url 'accounts:dashboard' %}">แดชบอร์ด</a></li>
+              <li>
+                <form action="{% url 'accounts:logout' %}" method="post">
+                  {% csrf_token %}
+                  <button type="submit" class="footer-logout-btn">ออกจากระบบ</button>
+                </form>
+              </li>
+            {% else %}
+              <li><a href="{% url 'accounts:login' %}">เข้าสู่ระบบ</a></li>
+              <li><a href="{% url 'accounts:signup' %}">สมัครสมาชิก</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:20px; color:#b2bec3;">
+        © {% now "Y" %} WaterDelivery. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const btn = document.getElementById('navToggle');
+    const menu = document.getElementById('navMenu');
+    if(btn) btn.addEventListener('click', () => menu.classList.toggle('is-open'));
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
